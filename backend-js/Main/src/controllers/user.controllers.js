@@ -15,16 +15,13 @@ const register = asyncHandler(async (req, res, next) => {
     //check for user creation
     // return response
 
-   const {fullname,email,username,password} =req.body;
+    const { fullname, email, username, password } = req.body;
 
-   if(
-    [fullname,email,username,password].some((field?.trim() === ""))
-   )
-   {
-        throw new ApiError(400,"All fields are required");
-   }
+    if ([fullname, email, username, password].some((field)=>field?.trim() === "")) {
+        return res.status(400).json(new ApiResponse(400, null, "All fields are required"));
+    }
 
-  const existedUser =  User.findOne({
+  const existedUser = await User.findOne({
          $or:[
               {
                 username
@@ -38,8 +35,12 @@ const register = asyncHandler(async (req, res, next) => {
         throw new ApiError(409,"User already exists");
     }
 
-    const avatarlocalpath = req.files?.avatar[0]?.path; 
-     const coverlocalpath = req.files?.cover[0]?.path;
+     const avatarlocalpath = req.files?.avatar[0]?.path; 
+    //  const coverlocalpath = req.files?.cover[0]?.path;
+    let coverlocalpath;
+    if(req.files && Array.isArray(req.files.cover) && req.files.cover.length > 0){
+        coverlocalpath = req.files?.cover[0]?.path;
+    }
 
      if(!avatarlocalpath){
         throw new ApiError(400,"Avatar is required");
@@ -57,9 +58,8 @@ const register = asyncHandler(async (req, res, next) => {
          email,
          username:username.toLowerCase(),
          password,
-         avatar:avatar.secure_url,
-         cover:cover?.secure_url || "",
-
+         avatar:avatar.url,
+         cover:cover?.url || null ,
      })
     const creatUser = await User.findById(user._id).select("-password -refreshToken");
 
