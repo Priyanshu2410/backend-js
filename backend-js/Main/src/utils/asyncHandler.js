@@ -1,7 +1,8 @@
-const asyncHandler = (fn) => {
+const asyncHandler = (requestHandler) => {
   return (req, res, next) => {
-    return Promise.resolve(fn(req, res, next)).catch((err) => next(err));
-  };
-};
+      Promise.resolve(requestHandler(req, res, next)).catch((err) => next(err))
+  }
+}
 
-export { asyncHandler}
+
+export { asyncHandler }
