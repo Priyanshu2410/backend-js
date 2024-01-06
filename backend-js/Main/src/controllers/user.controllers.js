@@ -238,7 +238,7 @@ const updateAccountDet = asyncHandler(async(req, res) => {
   if(!email || !fullname){
     throw new ApiError(400,"Email and fullname are required");
   }
- const user = User.findByIdAndUpdate(req.user._id,{
+ const user = await User.findByIdAndUpdate(req.user._id,{
     $set:{
       email,
       fullname
@@ -298,6 +298,69 @@ const updatusercoverimg = asyncHandler(async(req, res) => {
   .status(200)
   .json(new ApiResponse(200,user, "cover updated successfully")); 
 
+});
+
+const getUserChannelProfile = asyncHandler(async(req, res) => {
+  const {usename} = req.params;
+  if(!usename){
+    throw new ApiError(400,"Username is required");
+  }
+
+  const channel = await User.aggregate([
+    {
+      $match:{
+        username:usename?.toLowerCase()
+      }
+    },
+    {
+      $lookup:{
+        from:"subscriptions",
+        localField:"_id",
+        foreignField:"channel",
+        as:"subscriptions"
+      }
+    },
+    {
+      $lookup:{
+        from:"subscriptions",
+        localField:"_id",
+        foreignField:"subscriber",
+        as:"subscribedto"
+      }
+    },
+    {
+      $addFields:{
+        totalSubscribers:{$size:"$subscriptions"},
+        totalSubscribedTo:{$size:"$subscribedto"},
+        isSubscribed:{
+          $cond:{
+            if:{$in:[req.user._id,"$subscriptions.subscriber"]},
+            then:true,
+            else:false
+          }
+        }
+      }
+    },
+    {
+      $project:{
+        fullname:1,
+        username:1,
+        totalSubscribersm:1,
+        totalSubscribedTo:1,
+        isSubscribed:1,
+        avatar:1,
+        cover:1,
+        email:1,
+        password:0,
+        refreshToken:0
+      }
+    
+    }
+  ])
+  
+  if(!channe?.length){
+    throw new ApiError(404,"Channel not found");
+  }
 });
 
 export {register,loginuser,logoutUser,refereshAccesstoken,changeCurrentpassword,getCurrentUser,updateAccountDet,updateUseravatar,updatusercoverimg}
